@@ -79,3 +79,24 @@ BEGIN
     VALUES 
     (SID, SNAME, SPOSITION, SSALARY);
 END
+
+CREATE PROCEDURE AddEmployeeWithChecks(
+    IN SID INT, IN SNAME VARCHAR(50), IN SPOSITION VARCHAR(50), IN SSALARY INT
+)
+BEGIN
+    -- Check if the salary is within the valid range
+    IF SSALARY <= 0 OR SSALARY > 200000
+    THEN
+        SET MESSAGE_TEXT = 'Salary must be greater than 0 and less than or equal to 200,000';
+    END IF;
+
+    -- Check if the position is not empty
+    IF SPOSITION IS NULL
+    THEN
+        SET MESSAGE_TEXT = 'Position cannot be empty';
+    END IF;
+
+    -- If all conditions are satisfied, insert the new employee
+    INSERT INTO EMPLOYEES
+    VALUES 
+    (S
