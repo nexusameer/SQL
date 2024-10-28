@@ -1,117 +1,107 @@
-Skip to main content
-Google Classroom
-Classroom
-Database- II (ITM)
-Home
-Calendar
-Enrolled
-To-do
-O
-Object Oriented Programming
-ITM Fall 2024
-D
-Database- II (ITM)
-I
-ITM-DB
-I
-Introduction to Software Eng
-A
-I
-ITM- BNU
-A
-Archived classes
-Settings
-Lecture on Triggers  Material details
-Lecture on Triggers 
-Nimra Abbas
-•
-9:10 AM
-
-Triggers.sql
-SQL
-
-Triggers.docx
-Word
-
-Lecture 10.pptx
-PowerPoint
-
-Labsolution.sql
-SQL
-
-Schema.sql
-SQL
-
-Lab Task.docx
-Word
-Class comments
-
-Add class comment…
-
-CREATE DATABASE triggers11;
-USE triggers11;
-
-CREATE TABLE customer (
-    customer_id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    age INT NOT NULL
+Create DATABASE Lab7;
+USE Lab7;
+CREATE TABLE students (
+    student_id INT PRIMARY KEY,
+    name VARCHAR(50),
+    city VARCHAR(50)
 );
 
--- Before insert trigger
-
-DELIMITER //
-CREATE TRIGGER Age_Verify
-BEFORE INSERT ON customer
-FOR EACH ROW
-BEGIN
-    IF NEW.age < 0 THEN
-        SET NEW.age = 0;
-    END IF;
-END //
-DELIMITER ;
-
-INSERT INTO customer (name, age)
-VALUES 
-    ('John Doe', 30),
-    ('Jane Smith', -25),
-    ('Alice Johnson', 35),
-    ('Bob Brown', -40),
-    ('Eve Davis', 28);
-
-SELECT * FROM customer;
-
--- After insert trigger
-
-CREATE TABLE customer1 (
-    customer_id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    email VARCHAR(30),
-    birthdate date
+-- Create the courses table
+CREATE TABLE courses (
+    course_id INT PRIMARY KEY,
+    course_name VARCHAR(100)
 );
 
-CREATE TABLE message (
-    id INT AUTO_INCREMENT,
-    messageid INT,
-    message VARCHAR(300) NOT NULL,
-    PRIMARY KEY (id, messageid));
-    
-DELIMITER //
-CREATE TRIGGER Check_Null_DOB
-AFTER INSERT ON customer1
-FOR EACH ROW
-BEGIN
-    IF NEW.birthdate IS NULL THEN
-        INSERT INTO message(messageid, message) VALUES (new.customer_id, concat('Hi', new.name,'Please update your date of birth'));
-    END IF;
-END //
-DELIMITER ;
+-- Create the marks table
+CREATE TABLE marks (
+    student_id INT,
+    course_id INT,
+    marks INT,
+    FOREIGN KEY (student_id) REFERENCES students(student_id),
+    FOREIGN KEY (course_id) REFERENCES courses(course_id)
+);
 
-INSERT INTO customer1 (name, email, birthdate) VALUES 
-("Nimra", "nimra@gmail.com", NULL),
-("Ali", "ali@gmail.com", "1998-11-23"),
-("Haris", "haris@gmail.com", NULL),
-("Afia", "afia@gmail.com", "1999-12-21");
+-- Insert sample data into students
+INSERT INTO students (student_id, name, city) VALUES
+(1, 'Ali', 'Lahore'),
+(2, 'Sara', 'Karachi'),
+(3, 'Ahmed', 'Lahore'),
+(4, 'Zara', 'Islamabad'),
+(5, 'Usman', 'Lahore'),
+(6, 'Fatima', 'Karachi');
 
-SELECT * FROM message;
-Triggers.sql
-Displaying Triggers.sql.
+-- Insert sample data into courses
+INSERT INTO courses (course_id, course_name) VALUES
+(101, 'Mathematics'),
+(102, 'Physics'),
+(103, 'Computer Science');
+
+-- Insert sample data into marks
+INSERT INTO marks (student_id, course_id, marks) VALUES
+(1, 101, 85),
+(1, 102, 78),
+(2, 101, 88),
+(3, 103, 92),
+(3, 101, 79),
+(4, 102, 65),
+(5, 103, 94),
+(5, 101, 81),
+(6, 102, 73);
+
+-- Lab Questions --
+-- Q1: 1.Find the maximum marks from the students of Lahore.
+SELECT student_id, MAX(marks) AS max_marks
+FROM marks
+WHERE student_id IN (SELECT student_id FROM students WHERE city = 'Lahore');
+
+-- In order to add one more column with this (discuss this in case students ask)
+SELECT student_id, marks AS max_marks
+FROM marks
+WHERE marks = (
+    SELECT MAX(marks)
+    FROM marks
+    WHERE student_id IN (SELECT student_id FROM students WHERE city = 'Lahore')
+)
+AND student_id IN (SELECT student_id FROM students WHERE city = 'Lahore');
+
+-- Q2: List the names of students who scored above the average marks in Mathematics.
+SELECT name 
+FROM students 
+WHERE student_id IN (
+    SELECT student_id 
+    FROM marks 
+    WHERE course_id = 101 
+    AND marks > (SELECT AVG(marks) FROM marks WHERE course_id = 101)
+);
+
+-- Q3: Find the course with the highest average marks.
+SELECT course_name 
+FROM courses 
+WHERE course_id = (
+    SELECT course_id 
+    FROM marks 
+    GROUP BY course_id 
+    ORDER BY AVG(marks) DESC 
+);
+
+-- Q4: List all students who have never taken a Physics course.
+SELECT name 
+FROM students 
+WHERE student_id NOT IN (
+    SELECT DISTINCT student_id 
+    FROM marks 
+    WHERE course_id = 102
+);
+
+-- Q5: Find the students who scored the highest in any course.
+SELECT name 
+FROM students 
+WHERE student_id IN (
+    SELECT student_id 
+    FROM marks 
+    WHERE (course_id, marks) IN (
+        SELECT course_id, MAX(marks) 
+        FROM marks 
+        GROUP BY course_id
+    )
+);
